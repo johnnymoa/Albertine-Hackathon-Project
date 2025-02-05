@@ -7,11 +7,13 @@
     "storage",
     "activeTab",
     "scripting",
-    "tabs"
+    "tabs",
+    "microphone"
   ],
   "host_permissions": [
     "*://*/*",
-    "http://localhost:5000/*"
+    "http://localhost:5000/*",
+    "http://localhost:5001/*"
   ],
   "action": {
     "default_popup": "index.html",
@@ -27,7 +29,7 @@
     "128": "logo.png"
   },
   "web_accessible_resources": [{
-    "resources": ["logo.png"],
+    "resources": ["logo.png", "recorder.html"],
     "matches": ["<all_urls>"]
   }],
   "content_scripts": [

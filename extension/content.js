@@ -151,6 +151,20 @@ style.textContent = `
     font-size: 14px;
   }
 
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+
   #send-button {
     padding: 8px 15px;
     background-color: #3498db;
@@ -344,13 +358,15 @@ function getPageContext() {
     return { pageInfo, links, headers, paragraphs };
 }
 
-// Setup chat event listeners
+
+
 function setupChatEventListeners(modal) {
     const closeButton = modal.querySelector('.close-chat');
     const input = modal.querySelector('#user-input');
     const sendButton = modal.querySelector('#send-button');
     const chatContainer = modal.querySelector('#chat-container');
     let messages = [];
+    
     
     // Get initial page context
     const pageContext = getPageContext();

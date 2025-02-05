@@ -157,7 +157,22 @@ def app_synthesize() -> bytes:
     text = text.strip()
     return synthesize(text)
 
+@app.route('/api/stt', methods=['POST'])
+@cross_origin(origin='*', headers=['Content-Type', 'Authorization'])
+def app_transcribe():
+    try:
+        file = request.files.get('file')
+        data = {
+            "model": "openai/whisper-large-v3",
+            "response_format": "json",
+            "temperature": 0.2,
+            "file": file.read(),
+        }
+        response = albert_client.audio.transcriptions.create(**data)
+        return response.text
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)  # Change to unused port
