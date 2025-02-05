@@ -2,6 +2,11 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS, cross_origin
 import os
 from openai import OpenAI
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 app = Flask(__name__, static_url_path='/static')
 # Configure CORS to allow all origins with proper headers
