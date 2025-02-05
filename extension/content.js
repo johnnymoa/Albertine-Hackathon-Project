@@ -420,7 +420,8 @@ Rules:
 4. Only include relevant IDs in highlights array
 5. Keep response natural and conversational
 6. Never include markdown formatting
-7. Highlight all elements retaining to the user's question`
+7. Highlight all elements retaining to the user's question
+8. If the user ask to be guided through a process relating to the page, make him a numbered steps list then highlight progressively each step`
     };
     
     // Modified addMessage function accepts a third optional parameter 'store' (default true).
