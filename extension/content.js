@@ -225,6 +225,7 @@ function createChatModal() {
     modal.innerHTML = `
         <div class="chat-header">
             <span>Assistant d'accessibilité</span>
+            <button class="reset-chat" title="Nouvelle session">Nouvelle session</button>
             <button class="close-chat">×</button>
         </div>
         <div id="chat-container"></div>
@@ -358,107 +359,108 @@ function getPageContext() {
     return { pageInfo, links, headers, paragraphs };
 }
 
-
-
 function setupChatEventListeners(modal) {
     const closeButton = modal.querySelector('.close-chat');
+    const resetButton = modal.querySelector('.reset-chat');
     const input = modal.querySelector('#user-input');
     const sendButton = modal.querySelector('#send-button');
     const chatContainer = modal.querySelector('#chat-container');
     let messages = [];
     
-    
-    // Get initial page context
-    const pageContext = getPageContext();
+    const domainKey = window.location.hostname;
 
+    // Persist chat history for current domain
+    function persistChatHistory() {
+        chrome.storage.local.set({ ["chatHistory-" + domainKey]: messages });
+    }
+    
+    // Render chat history (skipping system messages) without modifying stored messages
+    function renderChatHistory() {
+        chatContainer.innerHTML = "";
+        messages.forEach(msg => {
+            if (msg.role !== 'system') {
+                addMessage(msg.content, msg.role, false);
+            }
+        });
+    }
+
+    // Get page context for system instructions
+    const pageContext = getPageContext();
     const systemMessage = {
         role: 'system',
         content: `You are an accessibility assistant helping users navigate this webpage. Respond ONLY with JSON containing a "response" and "highlights".
     
-    Current Page Information:
-    - URL: ${pageContext.pageInfo.url}
-    - Title: ${pageContext.pageInfo.title}
-    - Domain: ${pageContext.pageInfo.domain}
-    - Path: ${pageContext.pageInfo.path}
+Current Page Information:
+- URL: ${pageContext.pageInfo.url}
+- Title: ${pageContext.pageInfo.title}
+- Domain: ${pageContext.pageInfo.domain}
+- Path: ${pageContext.pageInfo.path}
     
-    Page Context:
+Page Context:
+
+Links:
+${pageContext.links.map(link => `- ID: ${link.id}, Text: "${link.text}" (${link.href})`).join('\n')}
     
-    Links:
-    ${pageContext.links.map(link => `- ID: ${link.id}, Text: "${link.text}" (${link.href})`).join('\n')}
+Headers:
+${pageContext.headers.map(header => `- ID: ${header.id}, ${header.tag}: "${header.text}"`).join('\n')}
     
-    Headers:
-    ${pageContext.headers.map(header => `- ID: ${header.id}, ${header.tag}: "${header.text}"`).join('\n')}
+Paragraphs:
+${pageContext.paragraphs.map(p => `- ID: ${p.id}, Text: "${p.text}"`).join('\n')}
     
-    Paragraphs:
-    ${pageContext.paragraphs.map(p => `- ID: ${p.id}, Text: "${p.text}"`).join('\n')}
+Response Format:
+{
+    "response": "Chat message responding to the user's question, the response should be in the same language as the user's question",
+    "highlights": ["header-0", "link-3"] // Array of data-accessibility-ids to highlight
+}
     
-    Response Format:
-    {
-        "response": "Chat message responding to the user's question, the response should be in the same language as the user's question",
-        "highlights": ["header-0", "link-3"] // Array of data-accessibility-ids to highlight
-    }
-    
-    Rules:
-    1. ALWAYS respond with valid JSON only
-    2. Reference elements ONLY by their data-accessibility-id in highlights array
-    3. Never mention the IDs in the response text
-    4. Only include relevant IDs in highlights array
-    5. Keep response natural and conversational
-    6. Never include markdown formatting
-    7. Highlight all elements retaining to the user's question`
+Rules:
+1. ALWAYS respond with valid JSON only
+2. Reference elements ONLY by their data-accessibility-id in highlights array
+3. Never mention the IDs in the response text
+4. Only include relevant IDs in highlights array
+5. Keep response natural and conversational
+6. Never include markdown formatting
+7. Highlight all elements retaining to the user's question`
     };
-  
-    // Initialize messages with system message
-    messages.push(systemMessage);
-
-    closeButton.addEventListener('click', () => {
-        modal.classList.remove('active');
-    });
-
-    function addMessage(content, role) {
+    
+    // Modified addMessage function accepts a third optional parameter 'store' (default true).
+    function addMessage(content, role, store = true) {
+        // Do not render system messages
+        if (role === 'system') {
+            if (store) {
+                messages.push({ role, content });
+                persistChatHistory();
+            }
+            return;
+        }
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}-message`;
         messageDiv.textContent = content;
-        
-        // Add play button for assistant messages
         if (role === 'assistant') {
             const playButton = document.createElement('button');
             playButton.className = 'play-audio-button';
             playButton.innerHTML = '🔊 Lire la réponse';
             playButton.onclick = async function() {
                 try {
-                    // Disable button and show loading state
                     playButton.disabled = true;
                     const originalText = playButton.innerHTML;
                     playButton.innerHTML = '<span class="audio-loading"></span> Chargement...';
-
                     const response = await fetch('http://localhost:5001/api/tts', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'text/plain',
-                        },
+                        headers: { 'Content-Type': 'text/plain' },
                         body: content
                     });
-
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
-
                     const audioBlob = await response.blob();
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audio = new Audio(audioUrl);
-                    
-                    // Clean up previous audio URL if it exists
                     if (playButton.dataset.audioUrl) {
                         URL.revokeObjectURL(playButton.dataset.audioUrl);
                     }
-                    
                     playButton.dataset.audioUrl = audioUrl;
-                    
-                    // Play audio
                     await audio.play();
-                    
-                    // Reset button state after playback
                     audio.onended = () => {
                         playButton.disabled = false;
                         playButton.innerHTML = originalText;
@@ -467,14 +469,10 @@ function setupChatEventListeners(modal) {
                     console.error('Error playing audio:', error);
                     playButton.disabled = false;
                     playButton.innerHTML = '❌ Erreur';
-                    setTimeout(() => {
-                        playButton.innerHTML = '🔊 Lire la réponse';
-                    }, 2000);
+                    setTimeout(() => { playButton.innerHTML = '🔊 Lire la réponse'; }, 2000);
                 }
             };
             messageDiv.appendChild(playButton);
-
-            // Add highlighted elements list if there are any highlights
             const highlightedElements = document.querySelectorAll('.accessibility-highlight');
             if (highlightedElements.length > 0) {
                 const highlightsList = document.createElement('ul');
@@ -482,7 +480,6 @@ function setupChatEventListeners(modal) {
                 highlightsList.style.padding = '10px 0 0 0';
                 highlightsList.style.margin = '10px 0 0 0';
                 highlightsList.style.borderTop = '1px solid #eee';
-
                 highlightedElements.forEach(element => {
                     const listItem = document.createElement('li');
                     const link = document.createElement('a');
@@ -491,8 +488,6 @@ function setupChatEventListeners(modal) {
                     link.style.textDecoration = 'none';
                     link.style.display = 'block';
                     link.style.padding = '5px 0';
-                    
-                    // Get appropriate text content based on element type
                     let text = element.textContent.trim();
                     if (element.tagName === 'A') {
                         text = `🔗 ${text}`;
@@ -501,31 +496,51 @@ function setupChatEventListeners(modal) {
                     } else if (element.tagName === 'P') {
                         text = `📝 ${text}`;
                     }
-                    
                     link.textContent = text;
-                    
                     link.onclick = (e) => {
                         e.preventDefault();
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     };
-                    
                     listItem.appendChild(link);
                     highlightsList.appendChild(listItem);
                 });
-                
                 messageDiv.appendChild(highlightsList);
             }
         }
-        
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
-        
-        // Don't display system messages in the chat UI
-        if (role !== 'system') {
+        if (store) {
             messages.push({ role, content });
+            persistChatHistory();
         }
     }
-
+    
+    // Load stored chat history for this domain, if it exists
+    chrome.storage.local.get(["chatHistory-" + domainKey], (result) => {
+        if (result["chatHistory-" + domainKey] && Array.isArray(result["chatHistory-" + domainKey]) && result["chatHistory-" + domainKey].length > 0) {
+            messages = result["chatHistory-" + domainKey];
+            renderChatHistory();
+        } else {
+            messages.push(systemMessage);
+            addMessage('Bonjour! Je suis votre assistant d\'accessibilité. Je peux vous aider à trouver des informations sur cette page. Que recherchez-vous?', 'assistant');
+        }
+    });
+    
+    // Event listener to close the modal
+    closeButton.addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+    
+    // Event listener for reset/new session
+    resetButton.addEventListener('click', () => {
+        if (confirm('Voulez-vous démarrer une nouvelle session de chat?')) {
+            messages = [systemMessage];
+            chatContainer.innerHTML = '';
+            addMessage('Bonjour! Je suis votre assistant d\'accessibilité. Je peux vous aider à trouver des informations sur cette page. Que recherchez-vous?', 'assistant');
+            persistChatHistory();
+        }
+    });
+    
     async function sendMessage() {
         const content = input.value.trim();
         if (!content) return;
@@ -552,13 +567,10 @@ function setupChatEventListeners(modal) {
 
             // Clear previous highlights
             clearHighlights();
-            
-            // Process new highlights
             if (data.highlights && Array.isArray(data.highlights)) {
                 data.highlights.forEach(highlightElementById);
             }
 
-            // Add assistant message
             addMessage(data.response, 'assistant');
 
         } catch (error) {
@@ -574,8 +586,7 @@ function setupChatEventListeners(modal) {
         }
     });
 
-    // Add welcome message
-    addMessage('Bonjour! Je suis votre assistant d\'accessibilité. Je peux vous aider à trouver des informations sur cette page. Que recherchez-vous?', 'assistant');
+    // Add welcome message is now handled after loading history if none exists
 }
 
 // Function to show or hide the button
@@ -615,7 +626,7 @@ function initializeButton() {
     observeDOMChanges();
     
     // Check storage for initial state
-    chrome.storage.sync.get(['accessEnabled'], (result) => {
+    chrome.storage.local.get(['accessEnabled'], (result) => {
         console.log("Storage state retrieved:", result);
         const isEnabled = result.accessEnabled !== undefined ? result.accessEnabled : true;
         console.log("Button should be enabled:", isEnabled);
