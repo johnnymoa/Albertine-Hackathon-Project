@@ -34,8 +34,8 @@ style.textContent = `
     position: fixed;
     bottom: 80px;
     right: 20px;
-    width: 350px;
-    height: 500px;
+    width: 450px;
+    height: 550px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -50,13 +50,80 @@ style.textContent = `
   }
 
   .chat-header {
-    padding: 15px;
     background: #3498db;
     color: white;
     font-weight: bold;
     display: flex;
+    flex-direction: column;
+  }
+
+  .chat-header-main {
+    display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 12px 15px;
+  }
+
+  .chat-header-options {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.1);
+    font-size: 0.9em;
+  }
+
+  .auto-read-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+  }
+
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  .toggle-switch input:checked + .toggle-slider {
+    background-color: #2ecc71;
+  }
+
+  .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px);
   }
 
   .close-chat {
@@ -84,6 +151,16 @@ style.textContent = `
     white-space: pre-wrap;
   }
 
+  .message-content {
+    margin-bottom: 8px;
+  }
+
+  .message-actions {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+
   .user-message {
     background-color: #e3f2fd;
     margin-left: 20%;
@@ -94,6 +171,8 @@ style.textContent = `
     margin-right: 20%;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     position: relative;
+    display: flex;
+    flex-direction: column;
   }
 
   .play-audio-button {
@@ -108,6 +187,29 @@ style.textContent = `
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .highlighted-elements {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+  }
+
+  .highlighted-elements li {
+    margin: 4px 0;
+  }
+
+  .highlighted-elements a {
+    color: #3498db;
+    text-decoration: none;
+    display: block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .highlighted-elements a:hover {
+    background-color: #f5f5f5;
   }
 
   .play-audio-button:hover {
@@ -178,6 +280,26 @@ style.textContent = `
     background-color: #2980b9;
   }
 
+  #voice-record-button {
+    padding: 8px 12px;
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+
+  #voice-record-button:hover {
+    background-color: #f0f0f0;
+  }
+
+  #voice-record-button.recording {
+    background-color: #ff4444;
+    color: white;
+    border-color: #ff4444;
+  }
+
   .accessibility-highlight {
     background-color: rgba(255, 235, 59, 0.5) !important;
     position: relative !important;
@@ -214,6 +336,30 @@ style.textContent = `
       right: 5%;
     }
   }
+
+  /* Typing loader indicator styles */
+  .typing-loader span {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin: 0 2px;
+    background: #555;
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
+  }
+
+  .typing-loader span:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+
+  .typing-loader span:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+
+  @keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
 `;
 
 document.head.appendChild(style);
@@ -224,14 +370,27 @@ function createChatModal() {
     modal.className = 'chat-modal';
     modal.innerHTML = `
         <div class="chat-header">
-            <span>Assistant d'accessibilité</span>
-            <button class="reset-chat" title="Nouvelle session">Nouvelle session</button>
-            <button class="close-chat">×</button>
+            <div class="chat-header-main">
+                <span>Assistant d'accessibilité</span>
+                <button class="close-chat">×</button>
+            </div>
+            <div class="chat-header-options">
+                <div class="auto-read-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-read-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Auto-lecture</span>
+                </div>
+                <button class="reset-chat" title="Nouvelle session">Nouvelle session</button>
+            </div>
         </div>
         <div id="chat-container"></div>
         <div id="input-container">
             <input type="text" id="user-input" placeholder="Tapez votre message...">
+            <button id="voice-record-button" title="Enregistrer un message vocal">🎤</button>
             <button id="send-button">Envoyer</button>
+            <audio id="audioPlayback" style="display: none;"></audio>
         </div>
     `;
     return modal;
@@ -364,9 +523,113 @@ function setupChatEventListeners(modal) {
     const resetButton = modal.querySelector('.reset-chat');
     const input = modal.querySelector('#user-input');
     const sendButton = modal.querySelector('#send-button');
+    const voiceButton = modal.querySelector('#voice-record-button');
     const chatContainer = modal.querySelector('#chat-container');
     let messages = [];
     
+    // Add voice recording variables
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingStream = null;
+    let isRecording = false;
+
+    async function startRecording() {
+        try {
+            audioChunks = [];
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: true,
+                video: false
+            });
+            recordingStream = stream;
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = async () => {
+                if (audioChunks.length > 0) {
+                    // Show transcription loader indicator
+                    const transcriptionLoader = document.createElement('div');
+                    transcriptionLoader.className = 'message assistant-message';
+                    transcriptionLoader.innerHTML = '<div class="message-content"><div class="typing-loader"><span></span><span></span><span></span></div><div>Transcription en cours...</div></div>';
+                    chatContainer.appendChild(transcriptionLoader);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'recording.wav');
+                    
+                    try {
+                        const response = await fetch('http://localhost:5001/api/stt2', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        
+                        const transcription = await response.text();
+                        transcriptionLoader.remove();
+                        input.value = transcription;
+                        // Programmatically trigger sending the transcribed message
+                        sendMessage();
+                    } catch (error) {
+                        console.error('Error transcribing audio:', error);
+                        transcriptionLoader.remove();
+                        addMessage('Désolé, une erreur est survenue lors de la transcription audio.', 'assistant');
+                    } finally {
+                        // Stop all tracks to free up the microphone
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                }
+            };
+            
+            // Start recording with 1-second timeslices
+            mediaRecorder.start(1000);
+            voiceButton.classList.add('recording');
+            voiceButton.textContent = '⏹️';
+            isRecording = true;
+            console.log("Recording started");
+            
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            if (error.name === 'NotAllowedError') {
+                addMessage('Veuillez autoriser l\'accès au microphone dans les paramètres de votre navigateur.', 'assistant');
+            } else {
+                addMessage('Désolé, impossible d\'accéder au microphone.', 'assistant');
+            }
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            voiceButton.classList.remove('recording');
+            voiceButton.textContent = '🎤';
+            isRecording = false;
+            console.log("Recording stopped");
+            
+            // Clean up the stream
+            if (recordingStream) {
+                recordingStream.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+            }
+        }
+    }
+
+    // Add voice button click handler
+    voiceButton.addEventListener('click', () => {
+        if (!isRecording) {
+            startRecording();
+        } else {
+            stopRecording();
+        }
+    });
+
     const domainKey = window.location.hostname;
 
     // Persist chat history for current domain
@@ -436,12 +699,24 @@ Rules:
         }
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}-message`;
-        messageDiv.textContent = content;
+        
+        // Create content container
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = content;
+        messageDiv.appendChild(contentDiv);
+
         if (role === 'assistant') {
+            // Create actions container
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+
+            // Add play button
             const playButton = document.createElement('button');
             playButton.className = 'play-audio-button';
-            playButton.innerHTML = '🔊 Lire la réponse';
-            playButton.onclick = async function() {
+            playButton.innerHTML = 'Lire la réponse';
+            
+            const playAudio = async function() {
                 try {
                     playButton.disabled = true;
                     const originalText = playButton.innerHTML;
@@ -473,22 +748,26 @@ Rules:
                     setTimeout(() => { playButton.innerHTML = '🔊 Lire la réponse'; }, 2000);
                 }
             };
-            messageDiv.appendChild(playButton);
+            
+            playButton.onclick = playAudio;
+            actionsDiv.appendChild(playButton);
+
+            // Auto-play if toggle is enabled
+            const autoReadToggle = document.querySelector('#auto-read-toggle');
+            if (autoReadToggle && autoReadToggle.checked) {
+                setTimeout(() => playAudio(), 500); // Small delay to ensure smooth UI
+            }
+
+            // Add highlighted elements if any
             const highlightedElements = document.querySelectorAll('.accessibility-highlight');
             if (highlightedElements.length > 0) {
                 const highlightsList = document.createElement('ul');
-                highlightsList.style.listStyle = 'none';
-                highlightsList.style.padding = '10px 0 0 0';
-                highlightsList.style.margin = '10px 0 0 0';
-                highlightsList.style.borderTop = '1px solid #eee';
+                highlightsList.className = 'highlighted-elements';
+                
                 highlightedElements.forEach(element => {
                     const listItem = document.createElement('li');
                     const link = document.createElement('a');
                     link.href = '#';
-                    link.style.color = '#3498db';
-                    link.style.textDecoration = 'none';
-                    link.style.display = 'block';
-                    link.style.padding = '5px 0';
                     let text = element.textContent.trim();
                     if (element.tagName === 'A') {
                         text = `🔗 ${text}`;
@@ -505,9 +784,12 @@ Rules:
                     listItem.appendChild(link);
                     highlightsList.appendChild(listItem);
                 });
-                messageDiv.appendChild(highlightsList);
+                actionsDiv.appendChild(highlightsList);
             }
+
+            messageDiv.appendChild(actionsDiv);
         }
+        
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         if (store) {
@@ -542,12 +824,20 @@ Rules:
         }
     });
     
+    // Modify sendMessage function to add loader indicator
     async function sendMessage() {
         const content = input.value.trim();
         if (!content) return;
 
         addMessage(content, 'user');
         input.value = '';
+
+        // Add loader indicator as assistant message loader
+        const loaderDiv = document.createElement('div');
+        loaderDiv.className = 'message assistant-message';
+        loaderDiv.innerHTML = '<div class="message-content"><div class="typing-loader"><span></span><span></span><span></span></div></div>';
+        chatContainer.appendChild(loaderDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
 
         try {
             const response = await fetch('http://localhost:5001/api/chat-json', {
@@ -572,10 +862,13 @@ Rules:
                 data.highlights.forEach(highlightElementById);
             }
 
+            // Remove loader and add actual assistant message
+            loaderDiv.remove();
             addMessage(data.response, 'assistant');
 
         } catch (error) {
             console.error('Error:', error);
+            loaderDiv.remove();
             addMessage('Désolé, une erreur est survenue. Veuillez réessayer.', 'assistant');
         }
     }

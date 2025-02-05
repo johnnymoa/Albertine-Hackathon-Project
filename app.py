@@ -174,5 +174,51 @@ def app_transcribe():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# New route: stt2 using OpenAI's official API for Whisper
+@app.route('/api/stt2', methods=['POST'])
+@cross_origin(origin='*', headers=['Content-Type', 'Authorization'])
+def stt2():
+    try:
+        file = request.files.get('file')
+        if not file:
+            return jsonify({'error': 'No file provided'}), 400
+
+        # Initialize OpenAI client properly
+        openai_client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url="https://api.openai.com/v1"
+        )
+
+        # Create a temporary file to store the audio
+        import tempfile
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, 'audio.wav')
+        
+        try:
+            file.save(temp_path)
+            
+            # Check file size (25MB limit)
+            file_size = os.path.getsize(temp_path)
+            if file_size > 25 * 1024 * 1024:
+                return jsonify({'error': 'File size exceeds 25MB limit'}), 400
+
+            # Open and transcribe the file
+            with open(temp_path, 'rb') as audio_file:
+                transcription = openai_client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="text"
+                )
+            
+            return transcription
+
+        finally:
+            # Clean up temporary files
+            import shutil
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)  # Change to unused port
