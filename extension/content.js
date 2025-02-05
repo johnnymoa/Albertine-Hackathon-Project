@@ -149,6 +149,59 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+let mediaRecorder;
+let audioChunks = [];
+let recordingStream = null;
+
+function startRecording() {
+    audioChunks = [];
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            recordingStream = stream;
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                if (audioChunks.length > 0) {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audioElement = document.getElementById('audioPlayback');
+                    audioElement.src = audioUrl;
+
+                    // Stop all tracks to free up the microphone
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            };
+            
+            mediaRecorder.start();
+            console.log("enregistrement started");
+        })
+        .catch(error => {
+            console.error('Error accessing microphone:', error);
+        });
+}
+
+function stopRecording() {
+    const audioElement = document.getElementById('audioPlayback')
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        fetch(
+            "http://localhost:5001/api/stt",
+            {
+                method : "POST",
+                body: audioElement.src,
+            }
+        )
+        console.log("enregistrement stopped");
+    }
+}
+
+
 // Create the chat modal HTML
 function createChatModal() {
     const modal = document.createElement('div');
@@ -161,6 +214,8 @@ function createChatModal() {
         <div id="chat-container"></div>
         <div id="input-container">
             <input type="text" id="user-input" placeholder="Tapez votre message...">
+            <button id="record-button">Parler</button>
+            <audio id="audioPlayback" hidden></audio>
             <button id="send-button">Envoyer</button>
         </div>
     `;
@@ -248,6 +303,7 @@ function setupChatEventListeners(modal) {
     const closeButton = modal.querySelector('.close-chat');
     const input = modal.querySelector('#user-input');
     const sendButton = modal.querySelector('#send-button');
+    const recordButton = modal.querySelector('#record-button');
     const chatContainer = modal.querySelector('#chat-container');
     let messages = [];
     
@@ -255,6 +311,10 @@ function setupChatEventListeners(modal) {
     const pageContext = getPageContext();
 
     // Create system message with page context
+    recordButton.addEventListener('mousedown', startRecording);
+    recordButton.addEventListener('mouseup', stopRecording);
+    recordButton.addEventListener('mouseleave', stopRecording);
+
     const systemMessage = {
         role: 'system',
         content: `You are an accessibility assistant helping users navigate this webpage.
