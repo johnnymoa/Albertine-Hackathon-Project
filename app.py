@@ -151,12 +151,29 @@ def chat_json():
         return jsonify({'error': str(e)}), 500
     
 
+@app.route('/api/stt', methods=['POST'])
+@cross_origin(origin='*', headers=['Content-Type', 'Authorization'])
+def app_transcribe():
+    try:
+        file = request.files.get('file')
+        data = {
+            "model": "openai/whisper-large-v3",
+            "response_format": "json",
+            "temperature": 0.2,
+            "file": file.read(),
+        }
+        response = albert_client.audio.transcriptions.create(**data)
+        return response.text
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route("/api/tts", methods=["POST"])
 def app_synthesize() -> bytes:
     text = request.data.decode("utf-8")
     text = text.strip()
     return synthesize(text)
-
 
 
 if __name__ == '__main__':
