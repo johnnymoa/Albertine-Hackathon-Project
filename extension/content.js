@@ -184,22 +184,6 @@ style.textContent = `
     border: 2px solid #ff9800;
     border-radius: 6px;
     pointer-events: none;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.05);
-      opacity: 0.5;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
   }
 
   @media (max-width: 768px) {

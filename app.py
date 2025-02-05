@@ -139,8 +139,8 @@ def chat_json():
             response = mistral_client.chat.complete(
                 model="mistral-large-latest",
                 messages=messages,
-                temperature=0.5,
-                top_p=0.5,
+                temperature=0.1,
+                top_p=0.1,
                 response_format = {
                     "type": "json_object"
                 }
