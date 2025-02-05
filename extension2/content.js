@@ -95,6 +95,46 @@ style.textContent = `
     background-color: #ffffff;
     margin-right: 20%;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .play-audio-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .play-audio-button:hover {
+    background-color: #2980b9;
+  }
+
+  .play-audio-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+
+  .audio-loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   #input-container {
@@ -343,6 +383,62 @@ function setupChatEventListeners(modal) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}-message`;
         messageDiv.textContent = content;
+        
+        // Add play button for assistant messages
+        if (role === 'assistant') {
+            const playButton = document.createElement('button');
+            playButton.className = 'play-audio-button';
+            playButton.innerHTML = '🔊 Lire la réponse';
+            playButton.onclick = async function() {
+                try {
+                    // Disable button and show loading state
+                    playButton.disabled = true;
+                    const originalText = playButton.innerHTML;
+                    playButton.innerHTML = '<span class="audio-loading"></span> Chargement...';
+
+                    const response = await fetch('http://localhost:5001/api/tts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: content
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    // Clean up previous audio URL if it exists
+                    if (playButton.dataset.audioUrl) {
+                        URL.revokeObjectURL(playButton.dataset.audioUrl);
+                    }
+                    
+                    playButton.dataset.audioUrl = audioUrl;
+                    
+                    // Play audio
+                    await audio.play();
+                    
+                    // Reset button state after playback
+                    audio.onended = () => {
+                        playButton.disabled = false;
+                        playButton.innerHTML = originalText;
+                    };
+                } catch (error) {
+                    console.error('Error playing audio:', error);
+                    playButton.disabled = false;
+                    playButton.innerHTML = '❌ Erreur';
+                    setTimeout(() => {
+                        playButton.innerHTML = '🔊 Lire la réponse';
+                    }, 2000);
+                }
+            };
+            messageDiv.appendChild(playButton);
+        }
+        
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         

@@ -5,6 +5,7 @@ from openai import OpenAI
 from mistralai import Mistral
 from dotenv import load_dotenv
 import json
+from tts.tts import synthesize
 
 # Load environment variables from .env file
 load_dotenv()
@@ -149,6 +150,13 @@ def chat_json():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+
+@app.route("/api/tts", methods=["POST"])
+def app_synthesize() -> bytes:
+    text = request.data.decode("utf-8")
+    text = text.strip()
+    return synthesize(text)
+
 
 
 if __name__ == '__main__':
