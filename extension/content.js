@@ -1,5 +1,3 @@
-console.log("Content script loaded");
-
 // Create and inject styles for the info button and chat modal
 const style = document.createElement('style');
 style.textContent = `
@@ -95,6 +93,46 @@ style.textContent = `
     background-color: #ffffff;
     margin-right: 20%;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .play-audio-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .play-audio-button:hover {
+    background-color: #2980b9;
+  }
+
+  .play-audio-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+
+  .audio-loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   #input-container {
@@ -127,9 +165,41 @@ style.textContent = `
   }
 
   .accessibility-highlight {
-    background-color: #ffeb3b !important;
-    outline: 3px solid #ffc107 !important;
+    background-color: rgba(255, 235, 59, 0.5) !important;
+    position: relative !important;
+    z-index: 999997 !important;
     transition: all 0.3s ease;
+    padding: 5px !important;
+    margin: -2px !important;
+    cursor: pointer !important;
+  }
+
+  .accessibility-highlight::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid #ff9800;
+    border-radius: 6px;
+    pointer-events: none;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   @media (max-width: 768px) {
@@ -147,6 +217,7 @@ style.textContent = `
     }
   }
 `;
+
 document.head.appendChild(style);
 
 // Create the chat modal HTML
@@ -194,9 +265,65 @@ function createInfoButton() {
     return button;
 }
 
-// Function to get page context
+// Function to tag elements with unique accessibility IDs
+function tagAccessibilityElements() {
+    const elementTypes = {
+        header: 'h1, h2, h3, h4, h5, h6',
+        link: 'a',
+        paragraph: 'p',
+        button: 'button',
+        input: 'input, textarea, select',
+        landmark: '[role="navigation"], [role="main"], [role="search"]'
+    };
+
+    Object.entries(elementTypes).forEach(([type, selector]) => {
+        Array.from(document.querySelectorAll(selector)).forEach((el, index) => {
+            // Skip elements that are part of our accessibility interface
+            if (el.closest('.accessibility-info-button') || el.closest('.chat-modal')) {
+                return;
+            }
+            
+            if (!el.getAttribute('data-accessibility-id')) {
+                el.setAttribute('data-accessibility-id', `${type}-${index}`);
+            }
+        });
+    });
+}
+
+// Function to clear existing highlights
+function clearHighlights() {
+    document.querySelectorAll('.accessibility-highlight').forEach(el => {
+        el.classList.remove('accessibility-highlight');
+    });
+}
+
+// Function to highlight and scroll to an element by ID
+function highlightElementById(id) {
+    const element = document.querySelector(`[data-accessibility-id="${id}"]`);
+    if (element) {
+        element.classList.add('accessibility-highlight');
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// Function to observe DOM changes
+function observeDOMChanges() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+                tagAccessibilityElements();
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// Update getPageContext function to include accessibility IDs
 function getPageContext() {
-    // Get current page info
     const pageInfo = {
         url: window.location.href,
         title: document.title,
@@ -207,6 +334,7 @@ function getPageContext() {
     const links = Array.from(document.querySelectorAll('a'))
         .filter(link => link.textContent.trim() !== '')
         .map(link => ({ 
+            id: link.getAttribute('data-accessibility-id'),
             text: link.textContent.trim(), 
             href: link.href,
             element: link
@@ -215,6 +343,7 @@ function getPageContext() {
     const headers = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
         .filter(header => header.textContent.trim() !== '')
         .map(header => ({ 
+            id: header.getAttribute('data-accessibility-id'),
             tag: header.tagName, 
             text: header.textContent.trim(),
             element: header
@@ -223,24 +352,12 @@ function getPageContext() {
     const paragraphs = Array.from(document.querySelectorAll('p'))
         .filter(p => p.textContent.trim() !== '')
         .map(p => ({ 
+            id: p.getAttribute('data-accessibility-id'),
             text: p.textContent.trim(),
             element: p
         }));
     
     return { pageInfo, links, headers, paragraphs };
-}
-
-// Function to highlight an element
-function highlightElement(element) {
-    // Remove any existing highlights
-    const highlighted = document.querySelectorAll('.accessibility-highlight');
-    highlighted.forEach(el => el.classList.remove('accessibility-highlight'));
-    
-    // Add highlight to new element
-    if (element) {
-        element.classList.add('accessibility-highlight');
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
 }
 
 // Setup chat event listeners
@@ -254,53 +371,152 @@ function setupChatEventListeners(modal) {
     // Get initial page context
     const pageContext = getPageContext();
 
-    // Create system message with page context
     const systemMessage = {
         role: 'system',
-        content: `You are an accessibility assistant helping users navigate this webpage.
-
-Current Page Information:
-- URL: ${pageContext.pageInfo.url}
-- Title: ${pageContext.pageInfo.title}
-- Domain: ${pageContext.pageInfo.domain}
-- Path: ${pageContext.pageInfo.path}
-
-Here is the current page context:
-
-Links found on the page:
-${pageContext.links.map(link => `- "${link.text}" (${link.href})`).join('\n')}
-
-Headers found on the page:
-${pageContext.headers.map(header => `- ${header.tag}: "${header.text}"`).join('\n')}
-
-Paragraphs found on the page:
-${pageContext.paragraphs.map(p => `- "${p.text}"`).join('\n')}
-
-When users ask about specific content, you can highlight elements on the page by including a "highlight" object in your response with the following structure three backticks then "json" then the object then three backticks:
-\`\`\`json 
-{
-    "type": "link" | "header" | "paragraph",
-    "text": "exact text to match"
-}
-\`\`\`
-
-Help users find information by understanding their questions and highlighting relevant content on the page. You can reference the current URL or page title when explaining where they are on the website.`
+        content: `You are an accessibility assistant helping users navigate this webpage. Respond ONLY with JSON containing a "response" and "highlights".
+    
+    Current Page Information:
+    - URL: ${pageContext.pageInfo.url}
+    - Title: ${pageContext.pageInfo.title}
+    - Domain: ${pageContext.pageInfo.domain}
+    - Path: ${pageContext.pageInfo.path}
+    
+    Page Context:
+    
+    Links:
+    ${pageContext.links.map(link => `- ID: ${link.id}, Text: "${link.text}" (${link.href})`).join('\n')}
+    
+    Headers:
+    ${pageContext.headers.map(header => `- ID: ${header.id}, ${header.tag}: "${header.text}"`).join('\n')}
+    
+    Paragraphs:
+    ${pageContext.paragraphs.map(p => `- ID: ${p.id}, Text: "${p.text}"`).join('\n')}
+    
+    Response Format:
+    {
+        "response": "Chat message responding to the user's question, the response should be in the same language as the user's question",
+        "highlights": ["header-0", "link-3"] // Array of data-accessibility-ids to highlight
+    }
+    
+    Rules:
+    1. ALWAYS respond with valid JSON only
+    2. Reference elements ONLY by their data-accessibility-id in highlights array
+    3. Never mention the IDs in the response text
+    4. Only include relevant IDs in highlights array
+    5. Keep response natural and conversational
+    6. Never include markdown formatting
+    7. Highlight all elements retaining to the user's question`
     };
-
+  
     // Initialize messages with system message
     messages.push(systemMessage);
 
     closeButton.addEventListener('click', () => {
         modal.classList.remove('active');
-        // Remove any highlights when closing chat
-        const highlighted = document.querySelectorAll('.accessibility-highlight');
-        highlighted.forEach(el => el.classList.remove('accessibility-highlight'));
     });
 
     function addMessage(content, role) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}-message`;
         messageDiv.textContent = content;
+        
+        // Add play button for assistant messages
+        if (role === 'assistant') {
+            const playButton = document.createElement('button');
+            playButton.className = 'play-audio-button';
+            playButton.innerHTML = '🔊 Lire la réponse';
+            playButton.onclick = async function() {
+                try {
+                    // Disable button and show loading state
+                    playButton.disabled = true;
+                    const originalText = playButton.innerHTML;
+                    playButton.innerHTML = '<span class="audio-loading"></span> Chargement...';
+
+                    const response = await fetch('http://localhost:5001/api/tts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: content
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    // Clean up previous audio URL if it exists
+                    if (playButton.dataset.audioUrl) {
+                        URL.revokeObjectURL(playButton.dataset.audioUrl);
+                    }
+                    
+                    playButton.dataset.audioUrl = audioUrl;
+                    
+                    // Play audio
+                    await audio.play();
+                    
+                    // Reset button state after playback
+                    audio.onended = () => {
+                        playButton.disabled = false;
+                        playButton.innerHTML = originalText;
+                    };
+                } catch (error) {
+                    console.error('Error playing audio:', error);
+                    playButton.disabled = false;
+                    playButton.innerHTML = '❌ Erreur';
+                    setTimeout(() => {
+                        playButton.innerHTML = '🔊 Lire la réponse';
+                    }, 2000);
+                }
+            };
+            messageDiv.appendChild(playButton);
+
+            // Add highlighted elements list if there are any highlights
+            const highlightedElements = document.querySelectorAll('.accessibility-highlight');
+            if (highlightedElements.length > 0) {
+                const highlightsList = document.createElement('ul');
+                highlightsList.style.listStyle = 'none';
+                highlightsList.style.padding = '10px 0 0 0';
+                highlightsList.style.margin = '10px 0 0 0';
+                highlightsList.style.borderTop = '1px solid #eee';
+
+                highlightedElements.forEach(element => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.style.color = '#3498db';
+                    link.style.textDecoration = 'none';
+                    link.style.display = 'block';
+                    link.style.padding = '5px 0';
+                    
+                    // Get appropriate text content based on element type
+                    let text = element.textContent.trim();
+                    if (element.tagName === 'A') {
+                        text = `🔗 ${text}`;
+                    } else if (/^H[1-6]$/.test(element.tagName)) {
+                        text = `📑 ${text}`;
+                    } else if (element.tagName === 'P') {
+                        text = `📝 ${text}`;
+                    }
+                    
+                    link.textContent = text;
+                    
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    };
+                    
+                    listItem.appendChild(link);
+                    highlightsList.appendChild(listItem);
+                });
+                
+                messageDiv.appendChild(highlightsList);
+            }
+        }
+        
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         
@@ -318,7 +534,7 @@ Help users find information by understanding their questions and highlighting re
         input.value = '';
 
         try {
-            const response = await fetch('http://localhost:5001/api/chat', {
+            const response = await fetch('http://localhost:5001/api/chat-json', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -334,32 +550,16 @@ Help users find information by understanding their questions and highlighting re
                 throw new Error(data.error);
             }
 
-            // Add assistant message
-            addMessage(data.content, 'assistant');
-
-            // If the response includes an element to highlight
-            if (data.highlight) {
-                let elementToHighlight = null;
-                
-                // Search in our page context for the matching element
-                if (data.highlight.type === 'link') {
-                    elementToHighlight = pageContext.links.find(l => 
-                        l.text === data.highlight.text || l.href === data.highlight.href
-                    )?.element;
-                } else if (data.highlight.type === 'header') {
-                    elementToHighlight = pageContext.headers.find(h => 
-                        h.text === data.highlight.text
-                    )?.element;
-                } else if (data.highlight.type === 'paragraph') {
-                    elementToHighlight = pageContext.paragraphs.find(p => 
-                        p.text === data.highlight.text
-                    )?.element;
-                }
-
-                if (elementToHighlight) {
-                    highlightElement(elementToHighlight);
-                }
+            // Clear previous highlights
+            clearHighlights();
+            
+            // Process new highlights
+            if (data.highlights && Array.isArray(data.highlights)) {
+                data.highlights.forEach(highlightElementById);
             }
+
+            // Add assistant message
+            addMessage(data.response, 'assistant');
 
         } catch (error) {
             console.error('Error:', error);
@@ -408,6 +608,12 @@ if (document.readyState === 'loading') {
 
 function initializeButton() {
     console.log("Initializing button");
+    // Tag elements with accessibility IDs
+    tagAccessibilityElements();
+    
+    // Set up DOM observer
+    observeDOMChanges();
+    
     // Check storage for initial state
     chrome.storage.sync.get(['accessEnabled'], (result) => {
         console.log("Storage state retrieved:", result);

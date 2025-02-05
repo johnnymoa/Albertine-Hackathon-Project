@@ -1,36 +1,3 @@
-.boop-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  z-index: 9998;
-  transition: transform 0.2s;
-}
-
-.boop-button:hover {
-  transform: scale(1.1);
-  background-color: #45a049;
-}
-
-.boop-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 9999;
-}
-
 .modal-content {
   position: relative;
   background-color: #fefefe;
@@ -73,32 +40,3 @@
     transform: scale(1);
   }
 }
-
-/* Dyslexia-friendly font */
-.dyslexia-mode {
-  font-family: OpenDyslexic, Arial, sans-serif !important;
-  line-height: 1.4 !important;
-  letter-spacing: 0.2px !important;
-}
-
-/* High contrast mode */
-.high-contrast-mode {
-  background-color: black !important;
-  color: white !important;
-}
-
-.high-contrast-mode a {
-  color: yellow !important;
-}
-
-.high-contrast-mode img {
-  filter: grayscale(100%) contrast(150%) !important;
-}
-
-.dyslexia-font {
-  font-family: "OpenDyslexic", Arial, sans-serif;
-}
-
-.high-contrast {
-  filter: invert(1) hue-rotate(180deg);
-} 
