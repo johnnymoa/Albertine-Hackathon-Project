@@ -3,3 +3,4 @@ Flask-Cors==5.0.0
 openai==1.61.0
 python-dotenv==1.0.1
 mistralai
+piper-tts==1.2.0
