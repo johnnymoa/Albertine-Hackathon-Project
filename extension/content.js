@@ -166,12 +166,25 @@ function startRecording() {
                 }
             };
             
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = async () => {
                 if (audioChunks.length > 0) {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audioElement = document.getElementById('audioPlayback');
                     audioElement.src = audioUrl;
+
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'filename.wav');
+                    const result = await fetch("http://localhost:5001/api/stt", {
+                      method: 'POST',
+                      body: formData
+                    })
+
+                    const transcript = await result.text()
+
+                    console.log(result);
+                    console.log(transcript);
+                    document.getElementById("user-input").value = transcript;
 
                     // Stop all tracks to free up the microphone
                     stream.getTracks().forEach(track => track.stop());
@@ -187,16 +200,8 @@ function startRecording() {
 }
 
 function stopRecording() {
-    const audioElement = document.getElementById('audioPlayback')
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        fetch(
-            "http://localhost:5001/api/stt",
-            {
-                method : "POST",
-                body: audioElement.src,
-            }
-        )
         console.log("enregistrement stopped");
     }
 }
