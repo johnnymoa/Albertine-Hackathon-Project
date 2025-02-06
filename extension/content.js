@@ -724,8 +724,7 @@ Rules:
                     const response = await fetch('http://localhost:5001/api/tts', {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': 'text/plain',
-                            'Accept': 'application/json'
+                            'Content-Type': 'text/plain'
                         },
                         body: content
                     });
@@ -733,16 +732,20 @@ Rules:
                         throw new Error('Network response was not ok');
                     }
                     
-                    const data = await response.json();
-                    if (!data.audio) {
+                    // Get the audio data as a blob directly
+                    const audioBlob = await response.blob();
+                    if (!audioBlob) {
                         throw new Error('No audio data received');
                     }
 
+                    // Create a new Audio element for each playback
                     const audio = new Audio();
-                    audio.src = `data:audio/wav;base64,${data.audio}`;
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audio.src = audioUrl;
                     
                     audio.onerror = (e) => {
                         console.error('Audio error:', e);
+                        URL.revokeObjectURL(audioUrl);
                         playButton.disabled = false;
                         playButton.innerHTML = '❌ Erreur audio';
                         setTimeout(() => { playButton.innerHTML = originalText; }, 2000);
@@ -751,6 +754,7 @@ Rules:
                     audio.oncanplay = () => {
                         audio.play().catch(error => {
                             console.error('Playback error:', error);
+                            URL.revokeObjectURL(audioUrl);
                             playButton.disabled = false;
                             playButton.innerHTML = '❌ Erreur lecture';
                             setTimeout(() => { playButton.innerHTML = originalText; }, 2000);
@@ -758,6 +762,7 @@ Rules:
                     };
                     
                     audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
                         playButton.disabled = false;
                         playButton.innerHTML = originalText;
                     };
