@@ -461,6 +461,15 @@ function highlightElementById(id) {
     if (element) {
         element.classList.add('accessibility-highlight');
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        console.log(element);
+        
+        // Check immediate children for aria-expanded attribute
+        const immediateChildren = Array.from(element.children);
+        const expandableChild = immediateChildren.find(child => child.hasAttribute('aria-expanded'));
+        
+        if (expandableChild && expandableChild.getAttribute('aria-expanded') === 'false') {
+            expandableChild.click();
+        }
     }
 }
 
