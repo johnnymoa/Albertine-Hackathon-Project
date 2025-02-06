@@ -369,6 +369,8 @@ document.head.appendChild(style);
 function createChatModal() {
     const modal = document.createElement('div');
     modal.className = 'chat-modal';
+    // Check if we're on the info-retraite login page
+    const isInfoRetraitePage = window.location.href.includes('www.info-retraite.fr/portail-services/login');
     modal.innerHTML = `
         <div class="chat-header">
             <div class="chat-header-main">
@@ -378,7 +380,7 @@ function createChatModal() {
             <div class="chat-header-options">
                 <div class="auto-read-toggle">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="auto-read-toggle">
+                        <input type="checkbox" id="auto-read-toggle" ${isInfoRetraitePage ? 'checked' : ''}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span>Auto-lecture</span>
