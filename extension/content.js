@@ -370,7 +370,7 @@ function createChatModal() {
     const modal = document.createElement('div');
     modal.className = 'chat-modal';
     // Check if we're on the info-retraite login page
-    const isInfoRetraitePage = window.location.href.includes('www.info-retraite.fr/portail-services/login');
+    const isInfoRetraitePage = false;
     modal.innerHTML = `
         <div class="chat-header">
             <div class="chat-header-main">
@@ -829,6 +829,11 @@ Rules:
                     const link = document.createElement('a');
                     link.href = '#';
                     let text = element.textContent.trim();
+
+                    if (text.length > 100) {
+                        text = text.slice(0, 100) + '...';
+                    }
+
                     if (element.tagName === 'A') {
                         text = `🔗 ${text}`;
                     } else if (/^H[1-6]$/.test(element.tagName)) {
@@ -836,6 +841,8 @@ Rules:
                     } else if (element.tagName === 'P') {
                         text = `📝 ${text}`;
                     }
+                    
+
                     link.textContent = text;
                     link.onclick = (e) => {
                         e.preventDefault();
