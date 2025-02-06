@@ -723,29 +723,50 @@ Rules:
                     playButton.innerHTML = '<span class="audio-loading"></span> Chargement...';
                     const response = await fetch('http://localhost:5001/api/tts', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'text/plain' },
+                        headers: { 
+                            'Content-Type': 'text/plain',
+                            'Accept': 'application/json'
+                        },
                         body: content
                     });
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
-                    const audioBlob = await response.blob();
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(audioUrl);
-                    if (playButton.dataset.audioUrl) {
-                        URL.revokeObjectURL(playButton.dataset.audioUrl);
+                    
+                    const data = await response.json();
+                    if (!data.audio) {
+                        throw new Error('No audio data received');
                     }
-                    playButton.dataset.audioUrl = audioUrl;
-                    await audio.play();
+
+                    const audio = new Audio();
+                    audio.src = `data:audio/wav;base64,${data.audio}`;
+                    
+                    audio.onerror = (e) => {
+                        console.error('Audio error:', e);
+                        playButton.disabled = false;
+                        playButton.innerHTML = '❌ Erreur audio';
+                        setTimeout(() => { playButton.innerHTML = originalText; }, 2000);
+                    };
+                    
+                    audio.oncanplay = () => {
+                        audio.play().catch(error => {
+                            console.error('Playback error:', error);
+                            playButton.disabled = false;
+                            playButton.innerHTML = '❌ Erreur lecture';
+                            setTimeout(() => { playButton.innerHTML = originalText; }, 2000);
+                        });
+                    };
+                    
                     audio.onended = () => {
                         playButton.disabled = false;
                         playButton.innerHTML = originalText;
                     };
+                    
                 } catch (error) {
                     console.error('Error playing audio:', error);
                     playButton.disabled = false;
                     playButton.innerHTML = '❌ Erreur';
-                    setTimeout(() => { playButton.innerHTML = '🔊 Lire la réponse'; }, 2000);
+                    setTimeout(() => { playButton.innerHTML = originalText; }, 2000);
                 }
             };
             
