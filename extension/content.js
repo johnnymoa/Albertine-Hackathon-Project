@@ -1,17 +1,19 @@
 // Create and inject styles for the info button and chat modal
 const style = document.createElement('style');
 style.textContent = `
+  @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+
   .accessibility-info-button {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 50px;
-    height: 50px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
-    background-color: #3498db;
+    background-color: #2980b9;
     color: white;
     border: none;
-    font-size: 24px;
+    font-size: 28px;
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -19,29 +21,30 @@ style.textContent = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Arial, sans-serif;
+    font-family: 'Lexend', sans-serif;
     transition: all 0.3s ease;
   }
 
   .accessibility-info-button:hover {
     transform: scale(1.1);
-    background-color: #2980b9;
+    background-color: #1f6da3;
     box-shadow: 0 6px 12px rgba(0,0,0,0.3);
   }
 
   .chat-modal {
     display: none;
     position: fixed;
-    bottom: 80px;
+    bottom: 90px;
     right: 20px;
-    width: 450px;
-    height: 550px;
+    width: 470px;
+    height: 600px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     z-index: 999998;
     overflow: hidden;
-    font-family: Arial, sans-serif;
+    font-family: 'Lexend', sans-serif;
+    transform-origin: bottom right;
   }
 
   .chat-modal.active {
@@ -50,11 +53,12 @@ style.textContent = `
   }
 
   .chat-header {
-    background: #3498db;
+    background: #2980b9;
     color: white;
     font-weight: bold;
     display: flex;
     flex-direction: column;
+    font-family: 'Lexend', sans-serif;
   }
 
   .chat-header-main {
@@ -79,6 +83,7 @@ style.textContent = `
     align-items: center;
     gap: 5px;
     font-size: 12px;
+    font-family: 'Lexend', sans-serif;
   }
 
   .toggle-switch {
@@ -133,6 +138,7 @@ style.textContent = `
     font-size: 20px;
     cursor: pointer;
     padding: 0;
+    font-family: 'Lexend', sans-serif;
   }
 
   #chat-container {
@@ -140,6 +146,7 @@ style.textContent = `
     padding: 15px;
     overflow-y: auto;
     background: #f8f9fa;
+    font-family: 'Lexend', sans-serif;
   }
 
   .message {
@@ -149,6 +156,7 @@ style.textContent = `
     max-width: 80%;
     word-wrap: break-word;
     white-space: pre-wrap;
+    font-family: 'Lexend', sans-serif;
   }
 
   .message-content {
@@ -176,7 +184,7 @@ style.textContent = `
   }
 
   .play-audio-button {
-    background-color: #3498db;
+    background-color: #2980b9;
     color: white;
     border: none;
     border-radius: 4px;
@@ -187,12 +195,14 @@ style.textContent = `
     display: flex;
     align-items: center;
     gap: 4px;
+    font-family: 'Lexend', sans-serif;
   }
 
   .highlighted-elements {
     list-style: none;
     padding: 0;
     margin: 8px 0 0 0;
+    font-family: 'Lexend', sans-serif;
   }
 
   .highlighted-elements li {
@@ -206,6 +216,7 @@ style.textContent = `
     padding: 4px 8px;
     border-radius: 4px;
     transition: background-color 0.2s;
+    font-family: 'Lexend', sans-serif;
   }
 
   .highlighted-elements a:hover {
@@ -213,7 +224,7 @@ style.textContent = `
   }
 
   .play-audio-button:hover {
-    background-color: #2980b9;
+    background-color: #1f6da3;
   }
 
   .play-audio-button:disabled {
@@ -243,6 +254,7 @@ style.textContent = `
     border-top: 1px solid #eee;
     display: flex;
     gap: 10px;
+    font-family: 'Lexend', sans-serif;
   }
 
   #user-input {
@@ -251,33 +263,21 @@ style.textContent = `
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    font-family: 'Lexend', sans-serif;
   }
-
-
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.1);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
 
   #send-button {
     padding: 8px 15px;
-    background-color: #3498db;
+    background-color: #2980b9;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-family: 'Lexend', sans-serif;
   }
 
   #send-button:hover {
-    background-color: #2980b9;
+    background-color: #1f6da3;
   }
 
   #voice-record-button {
@@ -288,6 +288,7 @@ style.textContent = `
     cursor: pointer;
     font-size: 16px;
     transition: all 0.3s ease;
+    font-family: 'Lexend', sans-serif;
   }
 
   #voice-record-button:hover {
@@ -371,7 +372,7 @@ function createChatModal() {
     modal.innerHTML = `
         <div class="chat-header">
             <div class="chat-header-main">
-                <span>Assistant d'accessibilité</span>
+                <span>Albertine</span>
                 <button class="close-chat">×</button>
             </div>
             <div class="chat-header-options">
@@ -401,7 +402,7 @@ function createInfoButton() {
     console.log("Creating info button");
     const button = document.createElement('button');
     button.className = 'accessibility-info-button';
-    button.innerHTML = 'i';
+    button.innerHTML = 'A';
     button.setAttribute('aria-label', 'Information sur l\'accessibilité');
     button.title = 'Information sur l\'accessibilité';
     
@@ -658,6 +659,21 @@ function setupChatEventListeners(modal) {
 
     // Get page context for system instructions
     const pageContext = getPageContext();
+    
+    // Additional context for retirement page
+    let additionalContext = '';
+    if (window.location.href.includes('www.service-public.fr/particuliers/vosdroits/F17904')) {
+        additionalContext = `here is a typical response for when aider qualqu'un a preparer sa retraite make sure to include the, "Je vais vous aider avec cette démarche pour partir à la retraite. Il y a 6 étapes à suivre, je peux  vous aider à chaque étape : 
+
+<b>1. Tout d'abord : il faut vérifier que vous êtes éligible</b>, c'est la partie 1 de cette page que l'on pourra explorer ensemble.
+2. Ensuite, vous devrez <b>vérifier votre relevé carrière</b> pour vérifier que toutes vos activités professionnelles ont bien été enregistrées en créant votre <b>compte retraite</b>.
+3. Puis vous allez <b>estimer le montant de votre retraite grâce à des outils de simulation</b>, je pourrai vous aider à comprendre les calculs.
+4.  Si jamais vous souhaitez <b>travailler pendant votre retraite</b>, nous allons également vérifier les conditions.
+5. Enfin, grâce à tous ces éléments vous allez pouvoir <a href="https://www.info-retraite.fr/portail-services/login"><b>effectuer votre demande de retraite</b></a>, et récupérer les sommes placées sur vos plans d'épargne retraite, si vous en avez.
+
+Si vous le souhaitez, nous pouvons commencer avec la première étape ? N'hésitez pas si certains termes ont encore besoin d'être clarifiés." there is a link to the login page of the info-retraite website please please make sure to included it`;
+    }
+
     const systemMessage = {
         role: 'system',
         content: `You are an accessibility assistant helping users navigate this webpage. Respond ONLY with JSON containing a "response" and "highlights".
@@ -678,10 +694,12 @@ ${pageContext.headers.map(header => `- ID: ${header.id}, ${header.tag}: "${heade
     
 Paragraphs:
 ${pageContext.paragraphs.map(p => `- ID: ${p.id}, Text: "${p.text}"`).join('\n')}
+
+${additionalContext}
     
 Response Format:
 {
-    "response": "Chat message responding to the user's question, the response should be in the same language as the user's question",
+    "response": "HTML of the Chat message responding to the user's question in html format, the response should be in the same language as the user's question",
     "highlights": ["header-0", "link-3"] // Array of data-accessibility-ids to highlight
 }
     
@@ -693,7 +711,8 @@ Rules:
 5. Keep response natural and conversational
 6. Never include markdown formatting
 7. Highlight all elements retaining to the user's question
-8. If the user ask to be guided through a process relating to the page, make him a numbered steps list then highlight progressively each step`
+8. If the user ask to be guided through a process relating to the page, make him a numbered steps list then highlight progressively each step
+9. Make sure to include in the response carriage return to make the response more readable`
     };
     
     // Modified addMessage function accepts a third optional parameter 'store' (default true).
@@ -712,7 +731,7 @@ Rules:
         // Create content container
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = content;
+        contentDiv.innerHTML = content;
         messageDiv.appendChild(contentDiv);
 
         if (role === 'assistant') {
@@ -730,12 +749,16 @@ Rules:
                     playButton.disabled = true;
                     const originalText = playButton.innerHTML;
                     playButton.innerHTML = '<span class="audio-loading"></span> Chargement...';
+                    
+                    // Strip HTML tags for TTS to avoid reading HTML markup
+                    const textContent = content.replace(/<[^>]*>/g, '');
+                    
                     const response = await fetch('http://localhost:5001/api/tts', {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'text/plain'
                         },
-                        body: content
+                        body: textContent
                     });
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -826,7 +849,8 @@ Rules:
         }
         
         chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        // Scroll to the new message's top position
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         if (store) {
             messages.push({ role, content });
             persistChatHistory();
