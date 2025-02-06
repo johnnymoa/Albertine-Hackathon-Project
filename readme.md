@@ -1,4 +1,4 @@
-# Web Accessibility Assistant - GenAI Hackathon for Public Good
+# Albertine - Web Accessibility Assistant - GenAI Hackathon for Public Good
 
 A Chrome extension designed to make the internet more accessible and less overwhelming by providing AI-powered navigation and accessibility features.
 
