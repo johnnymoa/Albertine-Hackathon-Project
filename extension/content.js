@@ -434,7 +434,8 @@ function tagAccessibilityElements() {
         paragraph: 'p',
         button: 'button',
         input: 'input, textarea, select',
-        landmark: '[role="navigation"], [role="main"], [role="search"]'
+        landmark: '[role="navigation"], [role="main"], [role="search"]',
+        span: 'span'
     };
 
     Object.entries(elementTypes).forEach(([type, selector]) => {
